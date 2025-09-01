@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="facebook-domain-verification" content="v8bm7pykk7grb079p5fmbwm0iwi82f" />
+  <meta name="facebook-domain-verification" content="9es7nsm4usid2350ioxesrdhbbsp1v" />
   <title>Bono Exclusivo</title>
 
   <!-- META PIXEL FACEBOOK -->
@@ -221,15 +221,15 @@
       btn.classList.toggle('enabled', ok);
     }
 
-    // Click en "Continuar": arma el enlace de WhatsApp (SIN UTM/fbclid en el texto) y muestra el botón
+    // Click en "Continuar": arma el enlace de WhatsApp y muestra el botón
     $('#continuar').addEventListener('click', function(){
-      // Track del gate pasado con eventID (deduplicación con CAPI)
+      // Track del gate pasado con eventID (correcto en 4º parámetro)
       try {
         window.__gateEventID = genEventID('gate');
-        if(window.fbq) fbq('trackCustom','GatePassed',{
-          juego: selected || '',
-          eventID: window.__gateEventID
-        });
+        if(window.fbq) fbq('trackCustom','GatePassed',
+          { juego: selected || '' },
+          { eventID: window.__gateEventID }
+        );
       } catch(e){}
 
       // ✅ Mensaje limpio (sin UTM / fbclid)
@@ -242,23 +242,39 @@
       btn.scrollIntoView({ behavior:'smooth', block:'center' });
     });
 
-    // Click real en WhatsApp → evento con eventID (deduplicación) + UTMs al pixel (no al chat)
-    $('#wa-btn').addEventListener('click', function(){
+    // Click real en WhatsApp → evento con eventID (4º parámetro) + pequeño delay para asegurar envío
+    $('#wa-btn').addEventListener('click', function(e){
+      // si todavía no armó el href, no seguimos
+      if (!this.href || this.href === '#') return;
+
       try {
         window.__waEventID = genEventID('wa');
-        if(window.fbq) fbq('trackCustom','WhatsAppClick', {
-          juego: selected || '',
-          eventID: window.__waEventID,
-          fbclid: qs.get('fbclid') || '',
-          utm_source: qs.get('utm_source') || '',
-          utm_medium: qs.get('utm_medium') || '',
-          utm_campaign: qs.get('utm_campaign') || '',
-          utm_content: qs.get('utm_content') || '',
-          utm_term: qs.get('utm_term') || ''
-        });
-      } catch(e){}
-      // Si querés sumar un estándar también:
-      // if(window.fbq) fbq('track','Lead', {value:1.00, currency:'USD'});
+
+        if(window.fbq){
+          fbq('trackCustom','WhatsAppClick',
+            {
+              juego: selected || '',
+              fbclid: qs.get('fbclid') || '',
+              utm_source: qs.get('utm_source') || '',
+              utm_medium: qs.get('utm_medium') || '',
+              utm_campaign: qs.get('utm_campaign') || '',
+              utm_content: qs.get('utm_content') || '',
+              utm_term: qs.get('utm_term') || '',
+              event_source_url: location.href
+            },
+            { eventID: window.__waEventID }
+          );
+        }
+
+        // Pequeño delay para evitar que el salto a la app corte el request
+        const url = this.href;
+        e.preventDefault();
+        setTimeout(()=>{ window.open(url, '_blank', 'noopener'); }, 220);
+      } catch(_) {
+        const url = this.href;
+        e.preventDefault();
+        setTimeout(()=>{ window.open(url, '_blank', 'noopener'); }, 120);
+      }
     });
   })();
   </script>
